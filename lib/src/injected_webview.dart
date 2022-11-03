@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:dart_injected_web3/src/js_callback_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 // ignore: implementation_imports
 import 'package:flutter/src/gestures/recognizer.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -26,7 +25,7 @@ class InjectedWebview extends StatefulWidget implements WebView {
   final bool isDebug;
   int chainId;
   String rpc;
-
+  bool initialized = false;
   InjectedWebview({
     required this.chainId,
     required this.rpc,
@@ -384,7 +383,8 @@ class InjectedWebview extends StatefulWidget implements WebView {
   final Future<String> Function(JsEthSignTypedData data, int chainId)?
       signTypedMessage;
   final Future<String> Function(JsEcRecoverObject data, int chainId)? ecRecover;
-  final Future<String> Function(String data, int chainId)? requestAccounts;
+  final Future<IncomingAccountsModel> Function(String data, int chainId)?
+      requestAccounts;
   final Future<String> Function(JsWatchAsset data, int chainId)? watchAsset;
 
   final Future<String> Function(JsAddEthereumChain data, int chainId)?
@@ -409,18 +409,30 @@ class _InjectedWebviewState extends State<InjectedWebview> {
       onLoadStart: widget.onLoadStart,
       onLoadStop: (controller, uri) async {
         widget.onLoadStop?.call(controller, uri);
-        _onLoadStop(controller, uri);
 
         // Future.delayed(Duration(seconds: 2)).then((_) {});
       },
       onLoadError: widget.onLoadError,
       onLoadHttpError: widget.onLoadHttpError,
       // onConsoleMessage: widget.onConsoleMessage,
-      onConsoleMessage: (controller, consoleMessage) {
-        print("Console Message: ${consoleMessage.message}");
-        // it will print: {message: {"foo":1,"bar":false}, messageLevel: 1}
+      onConsoleMessage: (
+        controller,
+        consoleMessage,
+      ) {
+        if (widget.isDebug) {
+          print("Console Message: ${consoleMessage.message}");
+        }
+        widget.onConsoleMessage?.call(
+          controller,
+          consoleMessage,
+        );
       },
-      onProgressChanged: widget.onProgressChanged,
+      onProgressChanged: (controller, progress) {
+        if (progress > 20 && !widget.initialized) {
+          _initWeb3(controller);
+        }
+        widget.onProgressChanged?.call(controller, progress);
+      },
       shouldOverrideUrlLoading: widget.shouldOverrideUrlLoading,
       onLoadResource: widget.onLoadResource,
       onScrollChanged: widget.onScrollChanged,
@@ -478,7 +490,7 @@ class _InjectedWebviewState extends State<InjectedWebview> {
     );
   }
 
-  _onLoadStop(InAppWebViewController controller, Uri? url) async {
+  _initWeb3(InAppWebViewController controller) async {
     await controller.injectJavascriptFileFromAsset(
         assetFilePath: "packages/dart_injected_web3/assets/provider.min.js");
     String initJs = _loadInitJs(widget.chainId, widget.rpc);
@@ -596,19 +608,27 @@ class _InjectedWebviewState extends State<InjectedWebview> {
             case "requestAccounts":
               {
                 try {
-                  debugPrint("At request accounts");
                   debugPrint(widget.requestAccounts.toString());
                   widget.requestAccounts
                       ?.call("", widget.chainId)
                       .then((signedData) {
-                    debugPrint(signedData);
-                    String setAddress =
-                        "window.ethereum.setAddress(\"$signedData\");";
-                    address = signedData;
+                    final setAddress =
+                        "window.ethereum.setAddress(\"${signedData.address}\");";
+                    address = signedData.address!;
                     String callback =
-                        "window.ethereum.sendResponse(${jsData.id}, [\"$signedData\"])";
+                        "window.ethereum.sendResponse(${jsData.id}, [\"${signedData.address}\"])";
                     _sendCustomResponse(controller, setAddress);
                     _sendCustomResponse(controller, callback);
+                    if (widget.chainId != signedData.chainId) {
+                      final initString = _addChain(
+                          signedData.chainId!,
+                          signedData.rpcUrl!,
+                          signedData.address!,
+                          widget.isDebug);
+                      widget.chainId = signedData.chainId!;
+                      widget.rpc = signedData.rpcUrl!;
+                      _sendCustomResponse(controller, initString);
+                    }
                   }).onError((e, stackTrace) {
                     debugPrint(e.toString());
                     _sendError(
@@ -650,8 +670,6 @@ class _InjectedWebviewState extends State<InjectedWebview> {
                   widget.addEthereumChain
                       ?.call(data, widget.chainId)
                       .then((signedData) {
-                    // _sendResult(
-                    //     controller, "ethereum", signedData, jsData.id ?? 0);
                     final initString = _addChain(int.parse(data.chainId!),
                         signedData, address, widget.isDebug);
                     widget.chainId = int.parse(data.chainId!);
@@ -700,6 +718,7 @@ class _InjectedWebviewState extends State<InjectedWebview> {
               }
           }
         });
+    widget.initialized = true;
     return;
   }
 
@@ -740,7 +759,6 @@ class _InjectedWebviewState extends State<InjectedWebview> {
         ''';
     return source;
   }
-
 
   void _sendError(InAppWebViewController controller, String network,
       String message, int methodId) {

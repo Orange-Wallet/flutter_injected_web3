@@ -145,3 +145,30 @@ class JsAddEthereumChain {
     return data;
   }
 }
+
+class IncomingAccountsModel {
+  int? chainId;
+  String? rpcUrl;
+  String? address;
+
+  IncomingAccountsModel({
+    required this.chainId,
+    required this.rpcUrl,
+    required this.address,
+  });
+
+  IncomingAccountsModel.fromJson(Map<String, dynamic> json) {
+    chainId = json['chainId'];
+    rpcUrl = json['rpcUrl'];
+    address = json['address'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['chainId'] = chainId;
+    data['rpcUrl'] = rpcUrl;
+    data['address'] = address;
+
+    return data;
+  }
+}

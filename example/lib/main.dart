@@ -12,10 +12,9 @@ void main() {
   runApp(MyApp());
 }
 
-
 class MyApp extends StatelessWidget {
-  String rpc = "https://rpc.ankr.com/polygon_mumbai";
-  int chainId = 80001;
+  String rpc = "https://rpc.ankr.com/eth";
+  int chainId = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -30,8 +29,9 @@ class MyApp extends StatelessWidget {
             requestAccounts: getAccount,
             signTransaction: signTransaction,
             signPersonalMessage: signPersonelMessage,
-            initialUrlRequest:
-                URLRequest(url: Uri.parse('https://app.uniswap.org/#/swap')),
+            initialUrlRequest: URLRequest(
+                url: Uri.parse(
+                    'https://wallet.polygon.technology/login?next=%2Fwallet')),
             chainId: chainId,
             rpc: rpc),
       ),
@@ -40,7 +40,7 @@ class MyApp extends StatelessWidget {
 
   Future<String> changeNetwork(JsAddEthereumChain data, int chainId) async {
     try {
-      rpc = "https://rpc.ankr.com/polygon";
+      rpc = "https://rpc.ankr.com/eth";
       chainId = int.parse(data.chainId!);
     } catch (e) {
       debugPrint("$e");
@@ -48,10 +48,12 @@ class MyApp extends StatelessWidget {
     return rpc;
   }
 
-  Future<String> getAccount(String _, int_) async {
+  Future<IncomingAccountsModel> getAccount(String _, int __) async {
     Credentials fromHex = EthPrivateKey.fromHex(
         "6843dc59d41289cc20e905180f6702621dcb9798b4413c031f8cb6ef0d9fc3e0");
-    return (await fromHex.extractAddress()).toString();
+    final address = await fromHex.extractAddress();
+    return IncomingAccountsModel(
+        address: address.toString(), chainId: chainId, rpcUrl: rpc);
   }
 
   Future<String> signTransaction(JsTransactionObject data, int chainId) async {
@@ -62,9 +64,7 @@ class MyApp extends StatelessWidget {
     try {
       Credentials fromHex = EthPrivateKey.fromHex(
           "6843dc59d41289cc20e905180f6702621dcb9798b4413c031f8cb6ef0d9fc3e0");
-      final sig = await fromHex.signPersonalMessage(
-          Uint8List.fromList(utf8.encode(data)),
-          chainId: chainId);
+      final sig = await fromHex.signPersonalMessage(hexToBytes(data));
 
       debugPrint("SignedTx ${sig}");
       return bytesToHex(sig, include0x: true);
