@@ -406,7 +406,12 @@ class _InjectedWebviewState extends State<InjectedWebview> {
       implementation: widget.implementation,
       contextMenu: widget.contextMenu,
       onWebViewCreated: widget.onWebViewCreated,
-      onLoadStart: widget.onLoadStart,
+      onLoadStart: (controller, uri) async {
+        widget.initialized = false;
+        widget.onLoadStart?.call(controller, uri);
+
+        // Future.delayed(Duration(seconds: 2)).then((_) {});
+      },
       onLoadStop: (controller, uri) async {
         widget.onLoadStop?.call(controller, uri);
 
