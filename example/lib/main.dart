@@ -38,7 +38,8 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  Future<String> changeNetwork(JsAddEthereumChain data, int chainId) async {
+  Future<String> changeNetwork(InAppWebViewController controller,
+      JsAddEthereumChain data, int chainId) async {
     try {
       rpc = "https://rpc.ankr.com/eth";
       chainId = int.parse(data.chainId!);
@@ -48,7 +49,8 @@ class MyApp extends StatelessWidget {
     return rpc;
   }
 
-  Future<IncomingAccountsModel> getAccount(String _, int __) async {
+  Future<IncomingAccountsModel> getAccount(
+      InAppWebViewController _, String ___, int __) async {
     Credentials fromHex = EthPrivateKey.fromHex(
         "6843dc59d41289cc20e905180f6702621dcb9798b4413c031f8cb6ef0d9fc3e0");
     final address = await fromHex.extractAddress();
@@ -56,11 +58,13 @@ class MyApp extends StatelessWidget {
         address: address.toString(), chainId: chainId, rpcUrl: rpc);
   }
 
-  Future<String> signTransaction(JsTransactionObject data, int chainId) async {
+  Future<String> signTransaction(
+      InAppWebViewController _, JsTransactionObject data, int chainId) async {
     return "0x45fb0060681bf5d8ea675ab0b3f76aa15c84b172f2fb3191b7a8ceb1e6a7f372";
   }
 
-  Future<String> signPersonelMessage(String data, int chainId) async {
+  Future<String> signPersonelMessage(
+      InAppWebViewController _, String data, int chainId) async {
     try {
       Credentials fromHex = EthPrivateKey.fromHex(
           "6843dc59d41289cc20e905180f6702621dcb9798b4413c031f8cb6ef0d9fc3e0");
