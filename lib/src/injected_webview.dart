@@ -376,19 +376,26 @@ class InjectedWebview extends StatefulWidget implements WebView {
   final void Function(
           InAppWebViewController controller, LoginRequest loginRequest)?
       androidOnReceivedLoginRequest;
-  final Future<String> Function(JsTransactionObject data, int chainId)?
-      signTransaction;
-  final Future<String> Function(String data, int chainId)? signPersonalMessage;
-  final Future<String> Function(String data, int chainId)? signMessage;
-  final Future<String> Function(JsEthSignTypedData data, int chainId)?
-      signTypedMessage;
-  final Future<String> Function(JsEcRecoverObject data, int chainId)? ecRecover;
-  final Future<IncomingAccountsModel> Function(String data, int chainId)?
+  final Future<String> Function(InAppWebViewController controller,
+      JsTransactionObject data, int chainId)? signTransaction;
+  final Future<String> Function(
+          InAppWebViewController controller, String data, int chainId)?
+      signPersonalMessage;
+  final Future<String> Function(
+      InAppWebViewController controller, String data, int chainId)? signMessage;
+  final Future<String> Function(InAppWebViewController controller,
+      JsEthSignTypedData data, int chainId)? signTypedMessage;
+  final Future<String> Function(InAppWebViewController controller,
+      JsEcRecoverObject data, int chainId)? ecRecover;
+  final Future<IncomingAccountsModel> Function(
+          InAppWebViewController controller, String data, int chainId)?
       requestAccounts;
-  final Future<String> Function(JsWatchAsset data, int chainId)? watchAsset;
+  final Future<String> Function(
+          InAppWebViewController controller, JsWatchAsset data, int chainId)?
+      watchAsset;
 
-  final Future<String> Function(JsAddEthereumChain data, int chainId)?
-      addEthereumChain;
+  final Future<String> Function(InAppWebViewController controller,
+      JsAddEthereumChain data, int chainId)? addEthereumChain;
 }
 
 class _InjectedWebviewState extends State<InjectedWebview> {
@@ -516,7 +523,7 @@ class _InjectedWebviewState extends State<InjectedWebview> {
                       JsTransactionObject.fromJson(jsData.object ?? {});
 
                   widget.signTransaction
-                      ?.call(data, widget.chainId)
+                      ?.call(controller, data, widget.chainId)
                       .then((signedData) {
                     _sendResult(
                         controller, "ethereum", signedData, jsData.id ?? 0);
@@ -536,7 +543,7 @@ class _InjectedWebviewState extends State<InjectedWebview> {
                   final data = JsDataModel.fromJson(jsData.object ?? {});
 
                   widget.signPersonalMessage
-                      ?.call(data.data ?? "", widget.chainId)
+                      ?.call(controller, data.data ?? "", widget.chainId)
                       .then((signedData) {
                     _sendResult(
                         controller, "ethereum", signedData, jsData.id ?? 0);
@@ -556,7 +563,7 @@ class _InjectedWebviewState extends State<InjectedWebview> {
                   final data = JsDataModel.fromJson(jsData.object ?? {});
 
                   widget.signMessage
-                      ?.call(data.data ?? "", widget.chainId)
+                      ?.call(controller, data.data ?? "", widget.chainId)
                       .then((signedData) {
                     _sendResult(
                         controller, "ethereum", signedData, jsData.id ?? 0);
@@ -576,7 +583,7 @@ class _InjectedWebviewState extends State<InjectedWebview> {
 
                 try {
                   widget.signTypedMessage
-                      ?.call(data, widget.chainId)
+                      ?.call(controller, data, widget.chainId)
                       .then((signedData) {
                     _sendResult(
                         controller, "ethereum", signedData, jsData.id ?? 0);
@@ -596,7 +603,7 @@ class _InjectedWebviewState extends State<InjectedWebview> {
 
                 try {
                   widget.ecRecover
-                      ?.call(data, widget.chainId)
+                      ?.call(controller, data, widget.chainId)
                       .then((signedData) {
                     _sendResult(
                         controller, "ethereum", signedData, jsData.id ?? 0);
@@ -615,7 +622,7 @@ class _InjectedWebviewState extends State<InjectedWebview> {
                 try {
                   debugPrint(widget.requestAccounts.toString());
                   widget.requestAccounts
-                      ?.call("", widget.chainId)
+                      ?.call(controller, "", widget.chainId)
                       .then((signedData) {
                     final setAddress =
                         "window.ethereum.setAddress(\"${signedData.address}\");";
@@ -653,7 +660,7 @@ class _InjectedWebviewState extends State<InjectedWebview> {
                   final data = JsWatchAsset.fromJson(jsData.object ?? {});
 
                   widget.watchAsset
-                      ?.call(data, widget.chainId)
+                      ?.call(controller, data, widget.chainId)
                       .then((signedData) {
                     _sendResult(
                         controller, "ethereum", signedData, jsData.id ?? 0);
@@ -673,7 +680,7 @@ class _InjectedWebviewState extends State<InjectedWebview> {
                   final data = JsAddEthereumChain.fromJson(jsData.object ?? {});
 
                   widget.addEthereumChain
-                      ?.call(data, widget.chainId)
+                      ?.call(controller, data, widget.chainId)
                       .then((signedData) {
                     final initString = _addChain(int.parse(data.chainId!),
                         signedData, address, widget.isDebug);
@@ -696,7 +703,7 @@ class _InjectedWebviewState extends State<InjectedWebview> {
                   final data = JsAddEthereumChain.fromJson(jsData.object ?? {});
 
                   widget.addEthereumChain
-                      ?.call(data, widget.chainId)
+                      ?.call(controller, data, widget.chainId)
                       .then((signedData) {
                     _sendResult(
                         controller, "ethereum", signedData, jsData.id ?? 0);
