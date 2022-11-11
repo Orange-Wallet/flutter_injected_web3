@@ -1,5 +1,4 @@
 import 'dart:collection';
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dart_injected_web3/src/js_callback_model.dart';
@@ -26,6 +25,7 @@ class InjectedWebview extends StatefulWidget implements WebView {
   int chainId;
   String rpc;
   bool initialized = false;
+  String? currentURL;
   InjectedWebview({
     required this.chainId,
     required this.rpc,
@@ -414,19 +414,16 @@ class _InjectedWebviewState extends State<InjectedWebview> {
       contextMenu: widget.contextMenu,
       onWebViewCreated: widget.onWebViewCreated,
       onLoadStart: (controller, uri) async {
-        widget.initialized = false;
+        _initWeb3(controller, false);
+        widget.initialized = true;
         widget.onLoadStart?.call(controller, uri);
-
-        // Future.delayed(Duration(seconds: 2)).then((_) {});
       },
       onLoadStop: (controller, uri) async {
+        _initWeb3(controller, true);
         widget.onLoadStop?.call(controller, uri);
-
-        // Future.delayed(Duration(seconds: 2)).then((_) {});
       },
       onLoadError: widget.onLoadError,
       onLoadHttpError: widget.onLoadHttpError,
-      // onConsoleMessage: widget.onConsoleMessage,
       onConsoleMessage: (
         controller,
         consoleMessage,
@@ -440,8 +437,8 @@ class _InjectedWebviewState extends State<InjectedWebview> {
         );
       },
       onProgressChanged: (controller, progress) {
-        if (progress > 20 && !widget.initialized) {
-          _initWeb3(controller);
+        if (progress > 50) {
+          _initWeb3(controller, true);
         }
         widget.onProgressChanged?.call(controller, progress);
       },
@@ -502,234 +499,239 @@ class _InjectedWebviewState extends State<InjectedWebview> {
     );
   }
 
-  _initWeb3(InAppWebViewController controller) async {
+  _initWeb3(InAppWebViewController controller, bool reInit) async {
     await controller.injectJavascriptFileFromAsset(
         assetFilePath: "packages/dart_injected_web3/assets/provider.min.js");
-    String initJs = _loadInitJs(widget.chainId, widget.rpc);
+    String initJs = reInit
+        ? _loadReInt(widget.chainId, widget.rpc)
+        : _loadInitJs(widget.chainId, widget.rpc);
     debugPrint("RPC: ${widget.rpc}");
     await controller.evaluateJavascript(source: initJs);
+    if (controller.javaScriptHandlersMap["OrangeHandler"] == null) {
+      controller.addJavaScriptHandler(
+          handlerName: "OrangeHandler",
+          callback: (callback) {
+            final jsData = JsCallbackModel.fromJson(callback[0]);
 
-    controller.addJavaScriptHandler(
-        handlerName: "OrangeHandler",
-        callback: (callback) {
-          final jsData = JsCallbackModel.fromJson(callback[0]);
+            debugPrint("callBack: $callback");
+            switch (jsData.name) {
+              case "signTransaction":
+                {
+                  try {
+                    final data =
+                        JsTransactionObject.fromJson(jsData.object ?? {});
 
-          debugPrint("callBack: $callback");
-          switch (jsData.name) {
-            case "signTransaction":
-              {
-                try {
-                  final data =
-                      JsTransactionObject.fromJson(jsData.object ?? {});
-
-                  widget.signTransaction
-                      ?.call(controller, data, widget.chainId)
-                      .then((signedData) {
-                    _sendResult(
-                        controller, "ethereum", signedData, jsData.id ?? 0);
-                  }).onError((e, stackTrace) {
+                    widget.signTransaction
+                        ?.call(controller, data, widget.chainId)
+                        .then((signedData) {
+                      _sendResult(
+                          controller, "ethereum", signedData, jsData.id ?? 0);
+                    }).onError((e, stackTrace) {
+                      _sendError(
+                          controller, "ethereum", e.toString(), jsData.id ?? 0);
+                    });
+                  } catch (e) {
                     _sendError(
                         controller, "ethereum", e.toString(), jsData.id ?? 0);
-                  });
-                } catch (e) {
-                  _sendError(
-                      controller, "ethereum", e.toString(), jsData.id ?? 0);
+                  }
+                  break;
                 }
-                break;
-              }
-            case "signPersonalMessage":
-              {
-                try {
-                  final data = JsDataModel.fromJson(jsData.object ?? {});
+              case "signPersonalMessage":
+                {
+                  try {
+                    final data = JsDataModel.fromJson(jsData.object ?? {});
 
-                  widget.signPersonalMessage
-                      ?.call(controller, data.data ?? "", widget.chainId)
-                      .then((signedData) {
-                    _sendResult(
-                        controller, "ethereum", signedData, jsData.id ?? 0);
-                  }).onError((e, stackTrace) {
+                    widget.signPersonalMessage
+                        ?.call(controller, data.data ?? "", widget.chainId)
+                        .then((signedData) {
+                      _sendResult(
+                          controller, "ethereum", signedData, jsData.id ?? 0);
+                    }).onError((e, stackTrace) {
+                      _sendError(
+                          controller, "ethereum", e.toString(), jsData.id ?? 0);
+                    });
+                  } catch (e) {
                     _sendError(
                         controller, "ethereum", e.toString(), jsData.id ?? 0);
-                  });
-                } catch (e) {
-                  _sendError(
-                      controller, "ethereum", e.toString(), jsData.id ?? 0);
+                  }
+                  break;
                 }
-                break;
-              }
-            case "signMessage":
-              {
-                try {
-                  final data = JsDataModel.fromJson(jsData.object ?? {});
+              case "signMessage":
+                {
+                  try {
+                    final data = JsDataModel.fromJson(jsData.object ?? {});
 
-                  widget.signMessage
-                      ?.call(controller, data.data ?? "", widget.chainId)
-                      .then((signedData) {
-                    _sendResult(
-                        controller, "ethereum", signedData, jsData.id ?? 0);
-                  }).onError((e, stackTrace) {
+                    widget.signMessage
+                        ?.call(controller, data.data ?? "", widget.chainId)
+                        .then((signedData) {
+                      _sendResult(
+                          controller, "ethereum", signedData, jsData.id ?? 0);
+                    }).onError((e, stackTrace) {
+                      _sendError(
+                          controller, "ethereum", e.toString(), jsData.id ?? 0);
+                    });
+                  } catch (e) {
                     _sendError(
                         controller, "ethereum", e.toString(), jsData.id ?? 0);
-                  });
-                } catch (e) {
-                  _sendError(
-                      controller, "ethereum", e.toString(), jsData.id ?? 0);
+                  }
+                  break;
                 }
-                break;
-              }
-            case "signTypedMessage":
-              {
-                final data = JsEthSignTypedData.fromJson(jsData.object ?? {});
+              case "signTypedMessage":
+                {
+                  final data = JsEthSignTypedData.fromJson(jsData.object ?? {});
 
-                try {
-                  widget.signTypedMessage
-                      ?.call(controller, data, widget.chainId)
-                      .then((signedData) {
-                    _sendResult(
-                        controller, "ethereum", signedData, jsData.id ?? 0);
-                  }).onError((e, stackTrace) {
+                  try {
+                    widget.signTypedMessage
+                        ?.call(controller, data, widget.chainId)
+                        .then((signedData) {
+                      _sendResult(
+                          controller, "ethereum", signedData, jsData.id ?? 0);
+                    }).onError((e, stackTrace) {
+                      _sendError(
+                          controller, "ethereum", e.toString(), jsData.id ?? 0);
+                    });
+                  } catch (e) {
                     _sendError(
                         controller, "ethereum", e.toString(), jsData.id ?? 0);
-                  });
-                } catch (e) {
-                  _sendError(
-                      controller, "ethereum", e.toString(), jsData.id ?? 0);
+                  }
+                  break;
                 }
-                break;
-              }
-            case "ecRecover":
-              {
-                final data = JsEcRecoverObject.fromJson(jsData.object ?? {});
+              case "ecRecover":
+                {
+                  final data = JsEcRecoverObject.fromJson(jsData.object ?? {});
 
-                try {
-                  widget.ecRecover
-                      ?.call(controller, data, widget.chainId)
-                      .then((signedData) {
-                    _sendResult(
-                        controller, "ethereum", signedData, jsData.id ?? 0);
-                  }).onError((e, stackTrace) {
+                  try {
+                    widget.ecRecover
+                        ?.call(controller, data, widget.chainId)
+                        .then((signedData) {
+                      _sendResult(
+                          controller, "ethereum", signedData, jsData.id ?? 0);
+                    }).onError((e, stackTrace) {
+                      _sendError(
+                          controller, "ethereum", e.toString(), jsData.id ?? 0);
+                    });
+                  } catch (e) {
                     _sendError(
                         controller, "ethereum", e.toString(), jsData.id ?? 0);
-                  });
-                } catch (e) {
-                  _sendError(
-                      controller, "ethereum", e.toString(), jsData.id ?? 0);
+                  }
+                  break;
                 }
-                break;
-              }
-            case "requestAccounts":
-              {
-                try {
-                  debugPrint(widget.requestAccounts.toString());
-                  widget.requestAccounts
-                      ?.call(controller, "", widget.chainId)
-                      .then((signedData) {
-                    final setAddress =
-                        "window.ethereum.setAddress(\"${signedData.address}\");";
-                    address = signedData.address!;
-                    String callback =
-                        "window.ethereum.sendResponse(${jsData.id}, [\"${signedData.address}\"])";
-                    _sendCustomResponse(controller, setAddress);
-                    _sendCustomResponse(controller, callback);
-                    if (widget.chainId != signedData.chainId) {
-                      final initString = _addChain(
-                          signedData.chainId!,
-                          signedData.rpcUrl!,
-                          signedData.address!,
-                          widget.isDebug);
-                      widget.chainId = signedData.chainId!;
-                      widget.rpc = signedData.rpcUrl!;
-                      _sendCustomResponse(controller, initString);
-                    }
-                  }).onError((e, stackTrace) {
+              case "requestAccounts":
+                {
+                  try {
+                    debugPrint(widget.requestAccounts.toString());
+                    widget.requestAccounts
+                        ?.call(controller, "", widget.chainId)
+                        .then((signedData) {
+                      final setAddress =
+                          "window.ethereum.setAddress(\"${signedData.address}\");";
+                      address = signedData.address!;
+                      String callback =
+                          "window.ethereum.sendResponse(${jsData.id}, [\"${signedData.address}\"])";
+                      _sendCustomResponse(controller, setAddress);
+                      _sendCustomResponse(controller, callback);
+                      if (widget.chainId != signedData.chainId) {
+                        final initString = _addChain(
+                            signedData.chainId!,
+                            signedData.rpcUrl!,
+                            signedData.address!,
+                            widget.isDebug);
+                        widget.chainId = signedData.chainId!;
+                        widget.rpc = signedData.rpcUrl!;
+                        _sendCustomResponse(controller, initString);
+                      }
+                    }).onError((e, stackTrace) {
+                      debugPrint(e.toString());
+                      _sendError(
+                          controller, "ethereum", e.toString(), jsData.id ?? 0);
+                    });
+                  } catch (e) {
                     debugPrint(e.toString());
+
                     _sendError(
                         controller, "ethereum", e.toString(), jsData.id ?? 0);
-                  });
-                } catch (e) {
-                  debugPrint(e.toString());
-
-                  _sendError(
-                      controller, "ethereum", e.toString(), jsData.id ?? 0);
+                  }
+                  break;
                 }
-                break;
-              }
-            case "watchAsset":
-              {
-                try {
-                  final data = JsWatchAsset.fromJson(jsData.object ?? {});
+              case "watchAsset":
+                {
+                  try {
+                    final data = JsWatchAsset.fromJson(jsData.object ?? {});
 
-                  widget.watchAsset
-                      ?.call(controller, data, widget.chainId)
-                      .then((signedData) {
-                    _sendResult(
-                        controller, "ethereum", signedData, jsData.id ?? 0);
-                  }).onError((e, stackTrace) {
+                    widget.watchAsset
+                        ?.call(controller, data, widget.chainId)
+                        .then((signedData) {
+                      _sendResult(
+                          controller, "ethereum", signedData, jsData.id ?? 0);
+                    }).onError((e, stackTrace) {
+                      _sendError(
+                          controller, "ethereum", e.toString(), jsData.id ?? 0);
+                    });
+                  } catch (e) {
                     _sendError(
                         controller, "ethereum", e.toString(), jsData.id ?? 0);
-                  });
-                } catch (e) {
-                  _sendError(
-                      controller, "ethereum", e.toString(), jsData.id ?? 0);
+                  }
+                  break;
                 }
-                break;
-              }
-            case "addEthereumChain":
-              {
-                try {
-                  final data = JsAddEthereumChain.fromJson(jsData.object ?? {});
+              case "addEthereumChain":
+                {
+                  try {
+                    final data =
+                        JsAddEthereumChain.fromJson(jsData.object ?? {});
 
-                  widget.addEthereumChain
-                      ?.call(controller, data, widget.chainId)
-                      .then((signedData) {
-                    final initString = _addChain(int.parse(data.chainId!),
-                        signedData, address, widget.isDebug);
-                    widget.chainId = int.parse(data.chainId!);
-                    widget.rpc = signedData;
-                    _sendCustomResponse(controller, initString);
-                  }).onError((e, stackTrace) {
+                    widget.addEthereumChain
+                        ?.call(controller, data, widget.chainId)
+                        .then((signedData) {
+                      final initString = _addChain(int.parse(data.chainId!),
+                          signedData, address, widget.isDebug);
+                      widget.chainId = int.parse(data.chainId!);
+                      widget.rpc = signedData;
+                      _sendCustomResponse(controller, initString);
+                    }).onError((e, stackTrace) {
+                      _sendError(
+                          controller, "ethereum", e.toString(), jsData.id ?? 0);
+                    });
+                  } catch (e) {
                     _sendError(
                         controller, "ethereum", e.toString(), jsData.id ?? 0);
-                  });
-                } catch (e) {
-                  _sendError(
-                      controller, "ethereum", e.toString(), jsData.id ?? 0);
+                  }
+                  break;
                 }
-                break;
-              }
-            case "switchEthereumChain":
-              {
-                try {
-                  final data = JsAddEthereumChain.fromJson(jsData.object ?? {});
+              case "switchEthereumChain":
+                {
+                  try {
+                    final data =
+                        JsAddEthereumChain.fromJson(jsData.object ?? {});
 
-                  widget.addEthereumChain
-                      ?.call(controller, data, widget.chainId)
-                      .then((signedData) {
-                    _sendResult(
-                        controller, "ethereum", signedData, jsData.id ?? 0);
-                    widget.chainId = int.parse(data.chainId!);
-                    widget.rpc = signedData;
-                    final initString = _addChain(int.parse(data.chainId!),
-                        signedData, address, widget.isDebug);
-                    _sendCustomResponse(controller, initString);
-                  }).onError((e, stackTrace) {
+                    widget.addEthereumChain
+                        ?.call(controller, data, widget.chainId)
+                        .then((signedData) {
+                      _sendResult(
+                          controller, "ethereum", signedData, jsData.id ?? 0);
+                      widget.chainId = int.parse(data.chainId!);
+                      widget.rpc = signedData;
+                      final initString = _addChain(int.parse(data.chainId!),
+                          signedData, address, widget.isDebug);
+                      _sendCustomResponse(controller, initString);
+                    }).onError((e, stackTrace) {
+                      _sendError(
+                          controller, "ethereum", e.toString(), jsData.id ?? 0);
+                    });
+                  } catch (e) {
                     _sendError(
                         controller, "ethereum", e.toString(), jsData.id ?? 0);
-                  });
-                } catch (e) {
-                  _sendError(
-                      controller, "ethereum", e.toString(), jsData.id ?? 0);
+                  }
+                  break;
                 }
-                break;
-              }
-            default:
-              {
-                _sendError(controller, jsData.network.toString(),
-                    "Operation not supported", jsData.id ?? 0);
-                break;
-              }
-          }
-        });
+              default:
+                {
+                  _sendError(controller, jsData.network.toString(),
+                      "Operation not supported", jsData.id ?? 0);
+                  break;
+                }
+            }
+          });
+    }
     widget.initialized = true;
     return;
   }
@@ -753,6 +755,32 @@ class _InjectedWebviewState extends State<InjectedWebview> {
                 window._tw_.postMessage(JSON.stringify(json));
             }
             window.ethereum = trustwallet.ethereum;
+        })();
+        ''';
+    return source;
+  }
+
+  String _loadReInt(int chainId, String rpcUrl) {
+    String source = '''
+        (function() {
+          if(window.ethereum == null){
+            var config = {                
+                ethereum: {
+                    chainId: $chainId,
+                    rpcUrl: "$rpcUrl"
+                },
+                solana: {
+                    cluster: "mainnet-beta",
+                },
+                isDebug: true
+            };
+            trustwallet.ethereum = new trustwallet.Provider(config);
+            trustwallet.solana = new trustwallet.SolanaProvider(config);
+            trustwallet.postMessage = (json) => {
+                window._tw_.postMessage(JSON.stringify(json));
+            }
+            window.ethereum = trustwallet.ethereum;
+          }
         })();
         ''';
     return source;

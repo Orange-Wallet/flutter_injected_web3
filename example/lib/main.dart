@@ -12,9 +12,12 @@ void main() {
   runApp(MyApp());
 }
 
+// ignore: must_be_immutable
 class MyApp extends StatelessWidget {
-  String rpc = "https://rpc.ankr.com/eth";
-  int chainId = 1;
+  String rpc = "https://rpc.ankr.com/polygon";
+  int chainId = 137;
+
+  MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -29,9 +32,9 @@ class MyApp extends StatelessWidget {
             requestAccounts: getAccount,
             signTransaction: signTransaction,
             signPersonalMessage: signPersonelMessage,
-            initialUrlRequest: URLRequest(
-                url: Uri.parse(
-                    'https://wallet.polygon.technology/login?next=%2Fwallet')),
+            isDebug: true,
+            initialUrlRequest:
+                URLRequest(url: Uri.parse('https://quickswap.exchange/#/')),
             chainId: chainId,
             rpc: rpc),
       ),
