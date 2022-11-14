@@ -414,12 +414,14 @@ class _InjectedWebviewState extends State<InjectedWebview> {
       contextMenu: widget.contextMenu,
       onWebViewCreated: widget.onWebViewCreated,
       onLoadStart: (controller, uri) async {
+        print("Load start: ${await controller.getProgress()}");
         _initWeb3(controller, false);
         widget.initialized = true;
         widget.onLoadStart?.call(controller, uri);
       },
       onLoadStop: (controller, uri) async {
         _initWeb3(controller, true);
+        print("Load stop: ${await controller.getProgress()}");
         widget.onLoadStop?.call(controller, uri);
       },
       onLoadError: widget.onLoadError,
@@ -436,10 +438,10 @@ class _InjectedWebviewState extends State<InjectedWebview> {
           consoleMessage,
         );
       },
-      onProgressChanged: (controller, progress) {
-        if (progress > 50) {
-          _initWeb3(controller, true);
-        }
+      onProgressChanged: (controller, progress) async {
+        print("Progress change: ${await controller.getProgress()}");
+
+        _initWeb3(controller, true);
         widget.onProgressChanged?.call(controller, progress);
       },
       shouldOverrideUrlLoading: widget.shouldOverrideUrlLoading,
@@ -503,14 +505,14 @@ class _InjectedWebviewState extends State<InjectedWebview> {
     await controller.injectJavascriptFileFromAsset(
         assetFilePath: "packages/dart_injected_web3/assets/provider.min.js");
     String initJs = reInit
-        ? _loadReInt(widget.chainId, widget.rpc)
+        ? _loadReInt(widget.chainId, widget.rpc, address)
         : _loadInitJs(widget.chainId, widget.rpc);
     debugPrint("RPC: ${widget.rpc}");
     await controller.evaluateJavascript(source: initJs);
     if (controller.javaScriptHandlersMap["OrangeHandler"] == null) {
       controller.addJavaScriptHandler(
           handlerName: "OrangeHandler",
-          callback: (callback) {
+          callback: (callback) async {
             final jsData = JsCallbackModel.fromJson(callback[0]);
 
             debugPrint("callBack: $callback");
@@ -622,14 +624,14 @@ class _InjectedWebviewState extends State<InjectedWebview> {
                     debugPrint(widget.requestAccounts.toString());
                     widget.requestAccounts
                         ?.call(controller, "", widget.chainId)
-                        .then((signedData) {
+                        .then((signedData) async {
                       final setAddress =
                           "window.ethereum.setAddress(\"${signedData.address}\");";
                       address = signedData.address!;
                       String callback =
                           "window.ethereum.sendResponse(${jsData.id}, [\"${signedData.address}\"])";
-                      _sendCustomResponse(controller, setAddress);
-                      _sendCustomResponse(controller, callback);
+                      await _sendCustomResponse(controller, callback);
+                      await _sendCustomResponse(controller, setAddress);
                       if (widget.chainId != signedData.chainId) {
                         final initString = _addChain(
                             signedData.chainId!,
@@ -678,7 +680,6 @@ class _InjectedWebviewState extends State<InjectedWebview> {
                   try {
                     final data =
                         JsAddEthereumChain.fromJson(jsData.object ?? {});
-
                     widget.addEthereumChain
                         ?.call(controller, data, widget.chainId)
                         .then((signedData) {
@@ -760,14 +761,15 @@ class _InjectedWebviewState extends State<InjectedWebview> {
     return source;
   }
 
-  String _loadReInt(int chainId, String rpcUrl) {
+  String _loadReInt(int chainId, String rpcUrl, String address) {
     String source = '''
         (function() {
           if(window.ethereum == null){
             var config = {                
                 ethereum: {
                     chainId: $chainId,
-                    rpcUrl: "$rpcUrl"
+                    rpcUrl: "$rpcUrl",
+                    address: "$address"
                 },
                 solana: {
                     cluster: "mainnet-beta",
@@ -800,33 +802,34 @@ class _InjectedWebviewState extends State<InjectedWebview> {
     return source;
   }
 
-  void _sendError(InAppWebViewController controller, String network,
+  Future<void> _sendError(InAppWebViewController controller, String network,
       String message, int methodId) {
     String script = "window.$network.sendError($methodId, \"$message\")";
-    controller.evaluateJavascript(source: script);
+    return controller.evaluateJavascript(source: script);
   }
 
-  void _sendResult(InAppWebViewController controller, String network,
+  Future<void> _sendResult(InAppWebViewController controller, String network,
       String message, int methodId) {
     String script = "window.$network.sendResponse($methodId, \"$message\")";
     debugPrint(script);
-    controller
+    return controller
         .evaluateJavascript(source: script)
         .then((value) => debugPrint(value))
         .onError((error, stackTrace) => debugPrint(error.toString()));
   }
 
-  void _sendCustomResponse(InAppWebViewController controller, String response) {
-    controller
+  Future<void> _sendCustomResponse(
+      InAppWebViewController controller, String response) {
+    return controller
         .evaluateJavascript(source: response)
         .then((value) => debugPrint(value))
         .onError((error, stackTrace) => debugPrint(error.toString()));
   }
 
-  void _sendResults(InAppWebViewController controller, String network,
+  Future<void> _sendResults(InAppWebViewController controller, String network,
       List<String> messages, int methodId) {
     String message = messages.join(",");
     String script = "window.$network.sendResponse($methodId, \"$message\")";
-    controller.evaluateJavascript(source: script);
+    return controller.evaluateJavascript(source: script);
   }
 }
