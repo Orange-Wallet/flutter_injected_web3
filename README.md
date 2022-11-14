@@ -14,19 +14,17 @@ and the Flutter guide for
 
 This is wrapper around slightly modified version of Trust Wallet's Web3 provider, you can find it [here](https://github.com/Orange-Wallet/web3-provider).
 
-Note: Its still early draft, we will try to update it whenever necessary or whenever we get time, so PRs are most welcome.
+Note: Its still an early draft, we will try to update it whenever necessary or whenever we get time, so PRs are most welcome.
 
 ## Features
 
-In most dapps you will se option of "Injected web3" if nothing like this comes up you can select Metamask, Trust wallet or any other wallet that injects web3.
+In most dapps you will se an option of "Injected web3", if nothing like this comes up you can select Metamask, Trust wallet or any other wallet that injects web3.
 
 ## Getting started
 If you are using flutter_inappwebview, use it directly from the Injected web3 package itself.
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
 
 ```
 class MyApp extends StatelessWidget {
@@ -101,4 +99,4 @@ class MyApp extends StatelessWidget {
 ```
 
 ## Additional information
-Special thanks to Trust Wallet for their implmentaion of Web3 Injection
+Special thanks to Trust Wallet for their implmentaion of Web3 Provider
