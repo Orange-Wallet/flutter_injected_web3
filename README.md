@@ -10,6 +10,7 @@ For general information about developing packages, see the Dart guide for
 and the Flutter guide for
 [developing packages and plugins](https://flutter.dev/developing-packages). 
 -->
+# Flutter Injected Web3
 
 This is wrapper around slightly modified version of Trust Wallet's Web3 Injection.
 

@@ -1,7 +1,7 @@
 import 'dart:collection';
 import 'dart:typed_data';
 
-import 'package:dart_injected_web3/src/js_callback_model.dart';
+import 'package:flutter_injected_web3/src/js_callback_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 // ignore: implementation_imports
@@ -503,7 +503,7 @@ class _InjectedWebviewState extends State<InjectedWebview> {
 
   _initWeb3(InAppWebViewController controller, bool reInit) async {
     await controller.injectJavascriptFileFromAsset(
-        assetFilePath: "packages/dart_injected_web3/assets/provider.min.js");
+        assetFilePath: "packages/flutter_injected_web3/assets/provider.min.js");
     String initJs = reInit
         ? _loadReInt(widget.chainId, widget.rpc, address)
         : _loadInitJs(widget.chainId, widget.rpc);
