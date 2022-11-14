@@ -12,7 +12,7 @@ and the Flutter guide for
 -->
 # Flutter Injected Web3
 
-This is wrapper around slightly modified version of Trust Wallet's Web3 Injection.
+This is wrapper around slightly modified version of Trust Wallet's Web3 provider, you can find it [here](https://github.com/Orange-Wallet/web3-provider).
 
 Note: Its still early draft, we will try to update it whenever necessary or whenever we get time, so PRs are most welcome.
 
