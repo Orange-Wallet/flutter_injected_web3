@@ -414,13 +414,14 @@ class _InjectedWebviewState extends State<InjectedWebview> {
       contextMenu: widget.contextMenu,
       onWebViewCreated: widget.onWebViewCreated,
       onLoadStart: (controller, uri) async {
-        widget.initialized = true;
         widget.onLoadStart?.call(controller, uri);
         _initWeb3(controller, false);
+        widget.initialized = true;
       },
       onLoadStop: (controller, uri) async {
-        widget.onLoadStop?.call(controller, uri);
         _initWeb3(controller, true);
+
+        widget.onLoadStop?.call(controller, uri);
       },
       onLoadError: widget.onLoadError,
       onLoadHttpError: widget.onLoadHttpError,
@@ -437,9 +438,9 @@ class _InjectedWebviewState extends State<InjectedWebview> {
         );
       },
       onProgressChanged: (controller, progress) async {
-        print("Progress change: ${await controller.getProgress()}");
-        widget.onProgressChanged?.call(controller, progress);
         _initWeb3(controller, true);
+
+        widget.onProgressChanged?.call(controller, progress);
       },
       shouldOverrideUrlLoading: widget.shouldOverrideUrlLoading,
       onLoadResource: widget.onLoadResource,
@@ -832,4 +833,3 @@ class _InjectedWebviewState extends State<InjectedWebview> {
     return controller.evaluateJavascript(source: script);
   }
 }
-
