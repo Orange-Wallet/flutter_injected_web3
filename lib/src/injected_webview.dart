@@ -415,7 +415,7 @@ class _InjectedWebviewState extends State<InjectedWebview> {
       onWebViewCreated: widget.onWebViewCreated,
       onLoadStart: (controller, uri) async {
         print("Load start: ${await controller.getProgress()}");
-        _initWeb3(controller, false);
+        _initWeb3(controller, true);
         widget.initialized = true;
         widget.onLoadStart?.call(controller, uri);
       },
