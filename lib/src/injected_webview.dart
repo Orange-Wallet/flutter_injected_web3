@@ -504,6 +504,7 @@ class _InjectedWebviewState extends State<InjectedWebview> {
   _initWeb3(InAppWebViewController controller, bool reInit) async {
     await controller.injectJavascriptFileFromAsset(
         assetFilePath: "packages/flutter_injected_web3/assets/provider.min.js");
+
     String initJs = reInit
         ? _loadReInt(widget.chainId, widget.rpc, address)
         : _loadInitJs(widget.chainId, widget.rpc);
@@ -630,8 +631,9 @@ class _InjectedWebviewState extends State<InjectedWebview> {
                       address = signedData.address!;
                       String callback =
                           "window.ethereum.sendResponse(${jsData.id}, [\"${signedData.address}\"])";
-                      await _sendCustomResponse(controller, callback);
-                      await _sendCustomResponse(controller, setAddress);
+                       await _sendCustomResponse(controller, setAddress);
+                       await _sendCustomResponse(controller, callback);
+
                       if (widget.chainId != signedData.chainId) {
                         final initString = _addChain(
                             signedData.chainId!,
@@ -640,7 +642,7 @@ class _InjectedWebviewState extends State<InjectedWebview> {
                             widget.isDebug);
                         widget.chainId = signedData.chainId!;
                         widget.rpc = signedData.rpcUrl!;
-                        _sendCustomResponse(controller, initString);
+                        await _sendCustomResponse(controller, initString);
                       }
                     }).onError((e, stackTrace) {
                       debugPrint(e.toString());
