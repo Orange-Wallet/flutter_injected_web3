@@ -414,15 +414,13 @@ class _InjectedWebviewState extends State<InjectedWebview> {
       contextMenu: widget.contextMenu,
       onWebViewCreated: widget.onWebViewCreated,
       onLoadStart: (controller, uri) async {
-        print("Load start: ${await controller.getProgress()}");
-        _initWeb3(controller, true);
         widget.initialized = true;
         widget.onLoadStart?.call(controller, uri);
+        _initWeb3(controller, false);
       },
       onLoadStop: (controller, uri) async {
-        _initWeb3(controller, true);
-        print("Load stop: ${await controller.getProgress()}");
         widget.onLoadStop?.call(controller, uri);
+        _initWeb3(controller, true);
       },
       onLoadError: widget.onLoadError,
       onLoadHttpError: widget.onLoadHttpError,
@@ -440,9 +438,8 @@ class _InjectedWebviewState extends State<InjectedWebview> {
       },
       onProgressChanged: (controller, progress) async {
         print("Progress change: ${await controller.getProgress()}");
-
-        _initWeb3(controller, true);
         widget.onProgressChanged?.call(controller, progress);
+        _initWeb3(controller, true);
       },
       shouldOverrideUrlLoading: widget.shouldOverrideUrlLoading,
       onLoadResource: widget.onLoadResource,
@@ -631,8 +628,8 @@ class _InjectedWebviewState extends State<InjectedWebview> {
                       address = signedData.address!;
                       String callback =
                           "window.ethereum.sendResponse(${jsData.id}, [\"${signedData.address}\"])";
-                       await _sendCustomResponse(controller, setAddress);
-                       await _sendCustomResponse(controller, callback);
+                      await _sendCustomResponse(controller, setAddress);
+                      await _sendCustomResponse(controller, callback);
 
                       if (widget.chainId != signedData.chainId) {
                         final initString = _addChain(
@@ -835,3 +832,4 @@ class _InjectedWebviewState extends State<InjectedWebview> {
     return controller.evaluateJavascript(source: script);
   }
 }
+
