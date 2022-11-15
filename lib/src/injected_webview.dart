@@ -1,13 +1,13 @@
 import 'dart:collection';
 import 'dart:typed_data';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter_injected_web3/src/js_callback_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-// ignore: implementation_imports
-import 'package:flutter/src/gestures/recognizer.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
+// ignore: must_be_immutable
 class InjectedWebview extends StatefulWidget implements WebView {
   /// `gestureRecognizers` specifies which gestures should be consumed by the WebView.
   /// It is possible for other gesture recognizers to be competing with the web view on pointer
