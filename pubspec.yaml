@@ -1,7 +1,7 @@
 name: flutter_injected_web3
 description: A web3 injection library for flutter.
 version: 1.0.0
-# homepage: https://www.example.com
+homepage: https://github.com/Orange-Wallet/flutter_injected_web3
 
 environment:
   sdk: '>=2.17.5 <3.0.0'
