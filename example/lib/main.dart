@@ -51,8 +51,7 @@ class MyApp extends StatelessWidget {
 
   Future<IncomingAccountsModel> getAccount(
       InAppWebViewController _, String ___, int __) async {
-    Credentials fromHex = EthPrivateKey.fromHex(
-        "Private key here");
+    Credentials fromHex = EthPrivateKey.fromHex("Private key here");
     final address = await fromHex.extractAddress();
     return IncomingAccountsModel(
         address: address.toString(), chainId: chainId, rpcUrl: rpc);
@@ -66,8 +65,7 @@ class MyApp extends StatelessWidget {
   Future<String> signPersonelMessage(
       InAppWebViewController _, String data, int chainId) async {
     try {
-      Credentials fromHex = EthPrivateKey.fromHex(
-          "Private key here");
+      Credentials fromHex = EthPrivateKey.fromHex("Private key here");
       final sig = await fromHex.signPersonalMessage(hexToBytes(data));
 
       debugPrint("SignedTx ${sig}");

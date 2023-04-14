@@ -1,13 +1,13 @@
 import 'dart:collection';
 import 'dart:typed_data';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter_injected_web3/src/js_callback_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+// ignore: implementation_imports
+import 'package:flutter/src/gestures/recognizer.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-// ignore: must_be_immutable
 class InjectedWebview extends StatefulWidget implements WebView {
   /// `gestureRecognizers` specifies which gestures should be consumed by the WebView.
   /// It is possible for other gesture recognizers to be competing with the web view on pointer
@@ -22,6 +22,7 @@ class InjectedWebview extends StatefulWidget implements WebView {
   @override
   final int? windowId;
   final bool isDebug;
+  String? address;
   int chainId;
   String rpc;
   bool initialized = false;
@@ -29,6 +30,7 @@ class InjectedWebview extends StatefulWidget implements WebView {
   InjectedWebview({
     required this.chainId,
     required this.rpc,
+    this.address,
     Key? key,
     this.windowId,
     this.initialUrlRequest,
@@ -402,6 +404,9 @@ class _InjectedWebviewState extends State<InjectedWebview> {
   String address = "";
   @override
   Widget build(BuildContext context) {
+    if (widget.address != null) {
+      address = widget.address!;
+    }
     return InAppWebView(
       windowId: widget.windowId,
       initialUrlRequest: widget.initialUrlRequest,
@@ -420,7 +425,9 @@ class _InjectedWebviewState extends State<InjectedWebview> {
       },
       onLoadStop: (controller, uri) async {
         _initWeb3(controller, true);
-
+        debugPrint("OnLoadStop: Called init");
+        controller.evaluateJavascript(
+            source: '''console.log(window.ethereum == null);''');
         widget.onLoadStop?.call(controller, uri);
       },
       onLoadError: widget.onLoadError,
@@ -731,6 +738,8 @@ class _InjectedWebviewState extends State<InjectedWebview> {
                   break;
                 }
             }
+            await controller.evaluateJavascript(
+                source: '''console.log(JSON.stringify(window.ethereum))''');
           });
     }
     widget.initialized = true;
@@ -740,22 +749,35 @@ class _InjectedWebviewState extends State<InjectedWebview> {
   String _loadInitJs(int chainId, String rpcUrl) {
     String source = '''
         (function() {
-            var config = {                
-                ethereum: {
-                    chainId: $chainId,
-                    rpcUrl: "$rpcUrl"
-                },
-                solana: {
-                    cluster: "mainnet-beta",
-                },
-                isDebug: true
-            };
-            trustwallet.ethereum = new trustwallet.Provider(config);
-            trustwallet.solana = new trustwallet.SolanaProvider(config);
-            trustwallet.postMessage = (json) => {
-                window._tw_.postMessage(JSON.stringify(json));
-            }
-            window.ethereum = trustwallet.ethereum;
+        var callbacks = new Map();
+
+        if(window.ethereum == null||window.ethereum.address == undefined|| window.ethereum.address == ""){
+          if(window.ethereum!=undefined && window.ethereum.callbacks!= undefined){
+            callbacks = window.ethereum.callbacks;
+          }
+          var config = {                
+              ethereum: {
+                  chainId: $chainId,
+                  rpcUrl: "$rpcUrl",
+                  address: "$address",
+                  isMetaMask: true,
+                  callbacks: callbacks
+              },
+              solana: {
+                  cluster: "mainnet-beta",
+              },
+              isDebug: true
+          };
+          trustwallet.ethereum = new trustwallet.Provider(config);
+          trustwallet.solana = new trustwallet.SolanaProvider(config);
+          trustwallet.postMessage = (json) => {
+              window._tw_.postMessage(JSON.stringify(json));
+          }
+          window.ethereum = trustwallet.ethereum;
+          console.log(JSON.stringify(window.ethereum));
+
+          }
+              
         })();
         ''';
     return source;
@@ -764,12 +786,19 @@ class _InjectedWebviewState extends State<InjectedWebview> {
   String _loadReInt(int chainId, String rpcUrl, String address) {
     String source = '''
         (function() {
-          if(window.ethereum == null){
+         var callbacks = new Map();
+
+         if(window.ethereum == null||window.ethereum.address == undefined|| window.ethereum.address == ""){
+            if(window.ethereum!=undefined && window.ethereum.callbacks!= undefined){
+              callbacks = window.ethereum.callbacks;
+            }
             var config = {                
                 ethereum: {
                     chainId: $chainId,
                     rpcUrl: "$rpcUrl",
-                    address: "$address"
+                    address: "$address",
+                    isMetaMask: true,
+                    callbacks: callbacks
                 },
                 solana: {
                     cluster: "mainnet-beta",
@@ -782,6 +811,7 @@ class _InjectedWebviewState extends State<InjectedWebview> {
                 window._tw_.postMessage(JSON.stringify(json));
             }
             window.ethereum = trustwallet.ethereum;
+            console.log(JSON.stringify(window.ethereum));
           }
         })();
         ''';
@@ -833,3 +863,5 @@ class _InjectedWebviewState extends State<InjectedWebview> {
     return controller.evaluateJavascript(source: script);
   }
 }
+
+///1681490912848
