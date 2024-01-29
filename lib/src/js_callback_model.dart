@@ -62,7 +62,7 @@ class JsTransactionObject {
     data['value'] = value;
     data['from'] = from;
     data['to'] = to;
-    data['data'] = data;
+    data['data'] = this.data;
     return data;
   }
 }
@@ -99,7 +99,7 @@ class JsEthSignTypedData {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
-    data['data'] = data;
+    data['data'] = this.data;
     data['raw'] = raw;
     return data;
   }
